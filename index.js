@@ -6,7 +6,7 @@ import axios from "axios";
 dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const channels = ["vDokii", "profprotonn", "azizana"]; // Add multiple channels here
+const channels = ["ruchess27", "profprotonn", "azizana"]; // Add multiple channels here
 
 async function refreshAccessToken() {
     try {
