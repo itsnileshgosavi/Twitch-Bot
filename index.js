@@ -6,7 +6,7 @@ import axios from "axios";
 dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const channels = ["ruchess27", "profprotonn", "azizana"]; // Add multiple channels here
+const channels = ["profprotonn", "ruchess27", "azizana"]; // Add multiple channels here
 
 async function refreshAccessToken() {
     try {
@@ -37,16 +37,20 @@ async function startBot() {
     const token = await refreshAccessToken() || process.env.OAUTH_TOKEN;
     ComfyJS.Init(process.env.BOT_USERNAME, token, channels);
 
-    ComfyJS.onChat = async (user, message, flags, self) => {
+    ComfyJS.onChat = async (user, message, flags, self, extra) => {
         if (self) return;
-
-        if (user.toLowerCase() === "profprotonn" && message.toLowerCase().startsWith("bot,")) {
+    
+        console.log(`Received message from ${user} in ${extra.channel}: ${message}`);
+    
+        if (message.toLowerCase().startsWith("bot,")) {
             const question = message.replace(/^bot,/, "").trim();
             const response = await askGemini(question);
-
-            ComfyJS.Say(`@${user}, ${response.substring(0, 400)}`);
+    
+            // Ensure the bot replies in the correct channel
+            ComfyJS.Say(`@${user}, ${response.substring(0, 400)}`, extra.channel);
         }
     };
+       
 
     console.log("Bot is running...");
 }
@@ -58,11 +62,11 @@ setInterval(async () => {
         ComfyJS.Init(process.env.BOT_USERNAME, newToken, channels);
         console.log("Bot re-authenticated with new token");
     }
-}, 24 * 60 * 60 * 1000);
+}, 3.5 * 60 * 60 * 1000);
 
 async function askGemini(question) {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(`respond to the following question/query in less than 500 characters: ${question}`);
+    const result = await model.generateContent(`respond to the following question/query in less than 500 characters and do not use markdown: ${question}`);
     return result.response.text();
 }
 
