@@ -35,7 +35,7 @@ async function refreshAccessToken() {
 
 async function startBot() {
     const token = await refreshAccessToken() || process.env.OAUTH_TOKEN;
-    ComfyJS.Init(process.env.BOT_USERNAME, token, "vDokii");
+    ComfyJS.Init(process.env.BOT_USERNAME, token, channels);
 
     ComfyJS.onChat = async (user, message, flags, self) => {
         if (self) return;
@@ -55,10 +55,10 @@ async function startBot() {
 setInterval(async () => {
     const newToken = await refreshAccessToken();
     if (newToken) {
-        ComfyJS.Init(process.env.BOT_USERNAME, newToken, "vDokii");
+        ComfyJS.Init(process.env.BOT_USERNAME, newToken, channels);
         console.log("Bot re-authenticated with new token");
     }
-}, 3.5 * 60 * 60 * 1000);
+}, 24 * 60 * 60 * 1000);
 
 async function askGemini(question) {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
