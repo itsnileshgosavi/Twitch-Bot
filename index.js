@@ -65,7 +65,7 @@ setInterval(async () => {
 }, 3.5 * 60 * 60 * 1000);
 
 async function askGemini(question) {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent(`respond to the following question/query in less than 500 characters and do not use markdown: ${question}`);
     return result.response.text();
 }
