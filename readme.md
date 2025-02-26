@@ -14,7 +14,7 @@ sudo docker rm twitch-bot
 3. Rebuild from changes
 
 ```bash
-cd Twitch-Bot
+ cd Twitch-Bot
  sudo docker build -t twitch-bot .
 ```
 
