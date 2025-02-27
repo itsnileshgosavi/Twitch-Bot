@@ -40,9 +40,7 @@ async function startBot() {
     ComfyJS.onChat = async (user, message, flags, self, extra) => {
         if (self) return;
     
-        console.log(`Received message from ${user} in ${extra.channel}: ${message}`);
-    
-        if (message.toLowerCase().startsWith("bot,")) {
+        if (message.toLowerCase().startsWith("bot,") && user.toLowerCase()==="profprotonn") {
             const question = message.replace(/^bot,/, "").trim();
             const response = await askGemini(question);
     

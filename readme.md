@@ -15,6 +15,7 @@ sudo docker rm twitch-bot
 
 ```bash
  cd Twitch-Bot
+ git pull
  sudo docker build -t twitch-bot .
 ```
 
