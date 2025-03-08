@@ -2,11 +2,27 @@ import ComfyJS from "comfy.js";
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from "axios";
+import express from "express";
 
 dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const channels = ["profprotonn", "ruchess27", "azizana", "thewildlatina", "dramaqueen_555", "tinapalooza", "beaststatsofficial"]; // Add multiple channels here
+
+
+const app = express();
+
+app.get("/restart/:password", async (req, res) => {
+    if (req.params.password !== "Nilesh@123") {
+        return res.status(401).send("Unauthorized");     
+    }
+    startBot();
+    res.sendStatus(200);   
+}
+)
+
+app.listen(3000, "0.0.0.0", () => {
+    console.log("Server is running on port 3000");
+});
 
 async function refreshAccessToken() {
     try {
@@ -35,7 +51,10 @@ async function refreshAccessToken() {
 
 async function startBot() {
     const token = await refreshAccessToken() || process.env.OAUTH_TOKEN;
-    ComfyJS.Init(process.env.BOT_USERNAME, token, channels);
+    const channels =await axios.get("https://67cc4505dd7651e464eb7b28.mockapi.io/bot/channels")
+    const usernames =channels.data.map(channel => channel.channelId);
+    console.log(usernames)
+    ComfyJS.Init(process.env.BOT_USERNAME, token, usernames);
 
     ComfyJS.onChat = async (user, message, flags, self, extra) => {
         if (self) return;
@@ -55,9 +74,11 @@ async function startBot() {
 
 // Auto-refresh token every 3.5 hours
 setInterval(async () => {
+    const channels =await axios.get("https://67cc4505dd7651e464eb7b28.mockapi.io/bot/channels")
+    const usernames =channels.data.map(channel => channel.channelId);
     const newToken = await refreshAccessToken();
     if (newToken) {
-        ComfyJS.Init(process.env.BOT_USERNAME, newToken, channels);
+        ComfyJS.Init(process.env.BOT_USERNAME, newToken, usernames);
         console.log("Bot re-authenticated with new token");
     }
 }, 3.5 * 60 * 60 * 1000);

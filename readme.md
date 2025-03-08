@@ -22,8 +22,7 @@ sudo docker rm twitch-bot
 4. Run the container
 
 ```bash
-sudo docker run -d --name twitch-bot --env-file .env twitch-bot
-
+sudo docker run -d --name twitch-bot --env-file .env -p 3000:3000 twitch-bot
 ```
 
 5. Auto Restart 
