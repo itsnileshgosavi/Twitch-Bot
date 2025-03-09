@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from "axios";
 import express from "express";
+import cors from "cors";
 
 dotenv.config();
 
@@ -10,11 +11,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 
 const app = express();
+//configure cors
+app.use(cors())
+app.use(express.json());
 
 app.get("/restart/:password", async (req, res) => {
     if (req.params.password !== "Nilesh@123") {
         return res.status(401).send("Unauthorized");     
     }
+    ComfyJS.Disconnect();
     startBot();
     res.sendStatus(200);   
 }
