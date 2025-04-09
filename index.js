@@ -9,6 +9,45 @@ dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+const commnadList = [
+    {
+        command: "!hello",
+        response:'Hello There!'
+    },
+    {
+        command: "!now",
+        response:'Now watching some movie that I dont like'
+    },
+    {
+        command: "!movie",
+        response:'Now watching some movie that I dont like'
+    },
+    {
+        command:'!about',
+        response:"I am human"
+    },
+    {
+        command:'!help',
+        response:"Yaha kisiko kuch help nahi milti.."
+    },
+    {
+        command:'!contact',
+        response:"LOL"
+    },
+    {
+        command:'!support',
+        response:"bhak bsdk"
+    },
+    {
+        command:'!subscribe',
+        response:'sub to my channel'
+    },
+    {
+        command:'!discord',
+        response:'discord link is in the profile. thik se dekh bhai'
+    },
+];
+
 
 const app = express();
 //configure cors
@@ -64,12 +103,19 @@ async function startBot() {
     ComfyJS.onChat = async (user, message, flags, self, extra) => {
         if (self) return;
     
-        if (message.toLowerCase().startsWith("bot,") && user.toLowerCase()==="profprotonn") {
-            const question = message.replace(/^bot,/, "").trim();
+        if (message.toLowerCase().startsWith("ai,") && user.toLowerCase()==="profprotonn") {
+            const question = message.replace(/^ai,/, "").trim();
             const response = await askGemini(question);
     
             // Ensure the bot replies in the correct channel
             ComfyJS.Say(`@${user}, ${response.substring(0, 400)}`, extra.channel);
+        }
+
+        for (const command of commnadList) {
+            if (message.toLowerCase().startsWith(command.command)) {
+                const response = command.response;
+                ComfyJS.Say(`@${user}, ${response.substring(0, 400)}`, extra.channel);
+            }
         }
     };
        
