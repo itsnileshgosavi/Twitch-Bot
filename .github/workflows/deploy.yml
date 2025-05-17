@@ -17,17 +17,21 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Copy files to EC2
+      - name: Copy project files to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_HOST }} "rm -rf ~/app && mkdir ~/app"
-          scp -r . ${{ secrets.EC2_HOST }}:~/app
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_HOST }} "rm -rf ~/my-bot && mkdir ~/my-bot"
+          scp -r . ${{ secrets.EC2_HOST }}:~/my-bot
 
-      - name: Build and run on EC2
+      - name: Upload .env to EC2
+        run: |
+          echo "${{ secrets.ENV_FILE }}" | ssh ${{ secrets.EC2_HOST }} "cat > ~/my-bot/.env"
+
+      - name: Build and run Docker container on EC2
         run: |
           ssh ${{ secrets.EC2_HOST }} << 'EOF'
-            cd ~/app
-            docker build -t my-app .
-            docker stop my-app || true
-            docker rm my-app || true
-            docker run -d --name my-app -p 3000:3000 my-app
+            cd ~/my-bot
+            docker build -t twitch-bot .
+            docker stop twitch-bot || true
+            docker rm twitch-bot || true
+            docker run -d --name twitch-bot --env-file .env -p 3000:3000 twitch-bot
           EOF
