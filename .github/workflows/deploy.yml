@@ -34,4 +34,5 @@ jobs:
             sudo docker stop twitch-bot || true
             sudo docker rm twitch-bot || true
             sudo docker run -d --name twitch-bot --env-file .env -p 3000:3000 twitch-bot
+            sudo docker update --restart always twitch-bot
           EOF

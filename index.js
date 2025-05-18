@@ -15,14 +15,6 @@ const commnadList = [
         response:'Hello There!'
     },
     {
-        command: "now",
-        response:'Now watching some movie that I dont like'
-    },
-    {
-        command: "movie",
-        response:'Now watching some movie that I dont like'
-    },
-    {
         command:'about',
         response:"I am human"
     },
@@ -41,11 +33,7 @@ const commnadList = [
     {
         command:'follow',
         response:'Sablog Follow karlo fatak se behenchod'
-    },
-    {
-        command:'discord',
-        response:'discord link is in the profile. thik se dekh bhai'
-    },
+    }
 ];
 
 // Add moderation commands
@@ -311,7 +299,3 @@ async function askGemini(question) {
 }
 
 startBot();
-
-
-
-
