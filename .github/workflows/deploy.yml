@@ -30,8 +30,8 @@ jobs:
         run: |
           ssh ${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/my-bot
-            docker build -t twitch-bot .
-            docker stop twitch-bot || true
-            docker rm twitch-bot || true
-            docker run -d --name twitch-bot --env-file .env -p 3000:3000 twitch-bot
+            sudo docker build -t twitch-bot .
+            sudo docker stop twitch-bot || true
+            sudo docker rm twitch-bot || true
+            sudo docker run -d --name twitch-bot --env-file .env -p 3000:3000 twitch-bot
           EOF
