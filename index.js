@@ -4,37 +4,25 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from "axios";
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
+import Command from "./models/Command.js";
 
 dotenv.config();
 
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI, {
+  dbName: "twitchbot",
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const commnadList = [
-    {
-        command: "hello",
-        response:'Hello There!'
-    },
-    {
-        command:'about',
-        response:"I am human"
-    },
-    {
-        command:'help',
-        response:"Yaha kisiko kuch help nahi milti.."
-    },
-    {
-        command:'contact',
-        response:"LOL"
-    },
-    {
-        command:'support',
-        response:"bhak bsdk"
-    },
-    {
-        command:'follow',
-        response:'Sablog Follow karlo fatak se behenchod'
-    }
-];
 
 // Add moderation commands
 const moderationCommands = [
@@ -181,6 +169,66 @@ const app = express();
 app.use(cors())
 app.use(express.json());
 
+// CRUD endpoints for custom commands
+app.post("/commands", async (req, res) => {
+  try {
+    const { channel, command, response, requiresMod = false } = req.body;
+    if (!channel || !command || !response) {
+      return res.status(400).json({ message: "channel, command and response are required" });
+    }
+    const cmd = await Command.findOneAndUpdate(
+      { command: command.toLowerCase(), channel: channel.toLowerCase() },
+      { response, requiresMod },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(cmd);
+  } catch (err) {
+    console.error("Error creating command:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get("/commands/:channel", async (req, res) => {
+  try {
+    const commands = await Command.find({ channel: req.params.channel.toLowerCase() });
+    res.json(commands);
+  } catch (err) {
+    console.error("Error fetching commands:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.delete("/commands/:id", async (req, res) => {
+  try {
+    const cmd = await Command.findByIdAndDelete(req.params.id);
+    res.json(cmd);
+  } catch (err) {
+    console.error("Error deleting command:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.put("/commands/:id", async (req, res) => {
+  try {
+    const updateFields = {};
+    const { command, response, requiresMod, channel } = req.body;
+    if (command !== undefined) updateFields.command = command.toLowerCase();
+    if (response !== undefined) updateFields.response = response;
+    if (requiresMod !== undefined) updateFields.requiresMod = requiresMod;
+    if (channel !== undefined) updateFields.channel = channel.toLowerCase();
+
+    const updated = await Command.findByIdAndUpdate(
+      req.params.id,
+      updateFields,
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    console.error("Error updating command:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 app.get("/restart/:password", async (req, res) => {
     if (req.params.password !== "Nilesh@123") {
         return res.status(401).send("Unauthorized");     
@@ -256,9 +304,10 @@ async function startBot() {
             }
         }
 
-        const commandObj = commnadList.find(cmd => cmd.command === command);
-        if (commandObj) {
-            ComfyJS.Say(`@${user} ${commandObj.response}`, extra.channel);
+        // Check MongoDB for channel-specific command first
+        const dbCommand = await Command.findOne({ command, channel: extra.channel.toLowerCase() });
+        if (dbCommand) {
+            ComfyJS.Say(`@${user} ${dbCommand.response}`, extra.channel);
         }
     };
 
@@ -266,6 +315,7 @@ async function startBot() {
         ComfyJS.Say(`@${user} Thanks for the ${extra.bits} bits!`, extra.channel);
     })
 
+    // ... (rest of the code remains the same)
     ComfyJS.onRaid((user, viewers, extra) => {
         ComfyJS.Say(`@${user} Thanks for the raid of ${viewers}!`, extra.channel);
     })
@@ -277,6 +327,77 @@ async function startBot() {
     ComfyJS.onSub = (user, message, extra) => {
         ComfyJS.Say(`@${user} Thanks for the sub!`, extra.channel);
     }
+
+    // ===== Additional ComfyJS events =====
+    ComfyJS.onResub = (user, streakMonths, message, methods, extra) => {
+        ComfyJS.Say(`@${user} thanks for resubscribing for ${streakMonths} months!`, extra?.channel);
+    };
+
+    ComfyJS.onGiftSub = (giver, streakMonths, recipient, methods, extra) => {
+        ComfyJS.Say(`@${giver} gifted a sub to @${recipient}!`, extra?.channel);
+    };
+
+    ComfyJS.onCommunitySub = (giver, numberOfSubs, methods, extra) => {
+        ComfyJS.Say(`@${giver} just gifted ${numberOfSubs} subs!`, extra?.channel);
+    };
+
+    ComfyJS.onFollow = (user, extra) => {
+        ComfyJS.Say(`@${user} thanks for following!`);
+    };
+
+    ComfyJS.onHosted = (hoster, viewers, auto, extra) => {
+        ComfyJS.Say(`Thanks @${hoster} for hosting with ${viewers} viewers!`);
+    };
+
+    ComfyJS.onJoin = (user, self, extra) => {
+        if (!self) {
+            console.log(`${user} joined #${extra?.channel}`);
+        }
+    };
+
+    ComfyJS.onPart = (user, self, extra) => {
+        if (!self) {
+            console.log(`${user} left #${extra?.channel}`);
+        }
+    };
+
+    ComfyJS.onConnected = (address, port, isSSL) => {
+        console.log(`Connected to ${address}:${port} (SSL:${isSSL})`);
+    };
+
+    ComfyJS.onDisconnected = (reason) => {
+        console.warn(`Disconnected: ${reason}`);
+    };
+
+    ComfyJS.onWhisper = (user, message, flags, self, extra) => {
+        if (!self) {
+            console.log(`Whisper from ${user}: ${message}`);
+        }
+    };
+
+    ComfyJS.onTimeout = (user, duration, extra) => {
+        ComfyJS.Say(`@${user} was timed out for ${duration} seconds.`);
+    };
+
+    ComfyJS.onBan = (user, reason, extra) => {
+        ComfyJS.Say(`@${user} was banned. Reason: ${reason || "unknown"}`);
+    };
+
+    ComfyJS.onMessageDeleted = (id, channel, username, deletedMessage, flags, extra) => {
+        console.log(`Message deleted from ${username} in #${channel}: ${deletedMessage}`);
+    };
+
+    ComfyJS.onChatCleared = (channel) => {
+        console.log(`Chat cleared in #${channel}`);
+    };
+
+    ComfyJS.onRewardGift = (user, rewardName, rewardCost, message, extra) => {
+        ComfyJS.Say(`@${user} gifted the reward '${rewardName}' worth ${rewardCost} points!`, extra?.channel);
+    };
+
+    ComfyJS.onError = (error) => {
+        console.error("ComfyJS Error:", error);
+    };
        
     console.log("Bot is running...");
 }
